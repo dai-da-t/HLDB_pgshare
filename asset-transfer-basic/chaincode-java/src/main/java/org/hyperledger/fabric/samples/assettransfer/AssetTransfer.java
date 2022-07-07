@@ -46,190 +46,133 @@ public final class AssetTransfer implements ContractInterface {
         ASSET_ALREADY_EXISTS
     }
 
-    /**
-     * Creates some initial assets on the ledger.
-     *
-     * @param ctx the transaction context
-     */
     @Transaction(intent = Transaction.TYPE.SUBMIT)
     public void InitLedger(final Context ctx) {
         ChaincodeStub stub = ctx.getStub();
 
-        CreateAsset(ctx, "asset1", "blue", 5, "Tomoko", 300);
-        CreateAsset(ctx, "asset2", "red", 5, "Brad", 400);
-        CreateAsset(ctx, "asset3", "green", 10, "Jin Soo", 500);
-        CreateAsset(ctx, "asset4", "yellow", 10, "Max", 600);
-        CreateAsset(ctx, "asset5", "black", 15, "Adrian", 700);
-        CreateAsset(ctx, "asset6", "white", 15, "Michel", 700);
+        AddLog(ctx, "1", "Ryo", 100, "coding");
+        AddLog(ctx, "2", "Tsumugi", 10, "coding");
+        AddLog(ctx, "3", "Amane", 200, "debug");
+        AddLog(ctx, "4", "Amane", 120, "test");
 
     }
 
-    /**
-     * Creates a new asset on the ledger.
-     *
-     * @param ctx the transaction context
-     * @param assetID the ID of the new asset
-     * @param color the color of the new asset
-     * @param size the size for the new asset
-     * @param owner the owner of the new asset
-     * @param appraisedValue the appraisedValue of the new asset
-     * @return the created asset
-     */
     @Transaction(intent = Transaction.TYPE.SUBMIT)
-    public Asset CreateAsset(final Context ctx, final String assetID, final String color, final int size,
-        final String owner, final int appraisedValue) {
+    public Record AddLog(final Context ctx, final String recordID, final String recordusername, final int time, final String description) {
         ChaincodeStub stub = ctx.getStub();
 
-        if (AssetExists(ctx, assetID)) {
-            String errorMessage = String.format("Asset %s already exists", assetID);
+        if (RecordExists(ctx, recordID)) {
+            String errorMessage = String.format("Record %s already exists", recordID);
             System.out.println(errorMessage);
             throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_ALREADY_EXISTS.toString());
         }
 
-        Asset asset = new Asset(assetID, color, size, owner, appraisedValue);
-        //Use Genson to convert the Asset into string, sort it alphabetically and serialize it into a json string
-        String sortedJson = genson.serialize(asset);
-        stub.putStringState(assetID, sortedJson);
+        Record record = new Record(recordID, recordusername, time, description);
+        System.out.println(record.toString());
 
-        return asset;
+        String sortedJson = genson.serialize(record);
+        stub.putStringState(recordID, sortedJson);
+
+        return record;
     }
 
-    /**
-     * Retrieves an asset with the specified ID from the ledger.
-     *
-     * @param ctx the transaction context
-     * @param assetID the ID of the asset
-     * @return the asset found on the ledger if there was one
-     */
-    @Transaction(intent = Transaction.TYPE.EVALUATE)
-    public Asset ReadAsset(final Context ctx, final String assetID) {
-        ChaincodeStub stub = ctx.getStub();
-        String assetJSON = stub.getStringState(assetID);
-
-        if (assetJSON == null || assetJSON.isEmpty()) {
-            String errorMessage = String.format("Asset %s does not exist", assetID);
-            System.out.println(errorMessage);
-            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_NOT_FOUND.toString());
-        }
-
-        Asset asset = genson.deserialize(assetJSON, Asset.class);
-        return asset;
-    }
-
-    /**
-     * Updates the properties of an asset on the ledger.
-     *
-     * @param ctx the transaction context
-     * @param assetID the ID of the asset being updated
-     * @param color the color of the asset being updated
-     * @param size the size of the asset being updated
-     * @param owner the owner of the asset being updated
-     * @param appraisedValue the appraisedValue of the asset being updated
-     * @return the transferred asset
-     */
     @Transaction(intent = Transaction.TYPE.SUBMIT)
-    public Asset UpdateAsset(final Context ctx, final String assetID, final String color, final int size,
-        final String owner, final int appraisedValue) {
+    public Record AddPrivateLog(final Context ctx, final String recordID, final String recordusername, final int time, final String description) {
         ChaincodeStub stub = ctx.getStub();
 
-        if (!AssetExists(ctx, assetID)) {
-            String errorMessage = String.format("Asset %s does not exist", assetID);
+        if (RecordExists(ctx, recordID)) {
+            String errorMessage = String.format("Record %s already exists", recordID);
             System.out.println(errorMessage);
-            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_NOT_FOUND.toString());
+            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_ALREADY_EXISTS.toString());
         }
 
-        Asset newAsset = new Asset(assetID, color, size, owner, appraisedValue);
-        //Use Genson to convert the Asset into string, sort it alphabetically and serialize it into a json string
-        String sortedJson = genson.serialize(newAsset);
-        stub.putStringState(assetID, sortedJson);
-        return newAsset;
+        Record record = new Record(recordID, recordusername, time, description);
+
+        String sortedJson = genson.serialize(record);
+        stub.putPrivateData("_implicit_org_Org1MSP", recordID, sortedJson);
+
+        return record;
     }
 
-    /**
-     * Deletes asset on the ledger.
-     *
-     * @param ctx the transaction context
-     * @param assetID the ID of the asset being deleted
-     */
-    @Transaction(intent = Transaction.TYPE.SUBMIT)
-    public void DeleteAsset(final Context ctx, final String assetID) {
-        ChaincodeStub stub = ctx.getStub();
-
-        if (!AssetExists(ctx, assetID)) {
-            String errorMessage = String.format("Asset %s does not exist", assetID);
-            System.out.println(errorMessage);
-            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_NOT_FOUND.toString());
-        }
-
-        stub.delState(assetID);
-    }
-
-    /**
-     * Checks the existence of the asset on the ledger
-     *
-     * @param ctx the transaction context
-     * @param assetID the ID of the asset
-     * @return boolean indicating the existence of the asset
-     */
     @Transaction(intent = Transaction.TYPE.EVALUATE)
-    public boolean AssetExists(final Context ctx, final String assetID) {
+    public Record ShowLog(final Context ctx, final String recordID) {
         ChaincodeStub stub = ctx.getStub();
-        String assetJSON = stub.getStringState(assetID);
+        String recordJSON = stub.getStringState(recordID);
 
-        return (assetJSON != null && !assetJSON.isEmpty());
-    }
-
-    /**
-     * Changes the owner of a asset on the ledger.
-     *
-     * @param ctx the transaction context
-     * @param assetID the ID of the asset being transferred
-     * @param newOwner the new owner
-     * @return the old owner
-     */
-    @Transaction(intent = Transaction.TYPE.SUBMIT)
-    public String TransferAsset(final Context ctx, final String assetID, final String newOwner) {
-        ChaincodeStub stub = ctx.getStub();
-        String assetJSON = stub.getStringState(assetID);
-
-        if (assetJSON == null || assetJSON.isEmpty()) {
-            String errorMessage = String.format("Asset %s does not exist", assetID);
+        if (recordJSON == null || recordJSON.isEmpty()) {
+            String errorMessage = String.format("Record %s does not exist", recordID);
             System.out.println(errorMessage);
             throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_NOT_FOUND.toString());
         }
 
-        Asset asset = genson.deserialize(assetJSON, Asset.class);
-
-        Asset newAsset = new Asset(asset.getAssetID(), asset.getColor(), asset.getSize(), newOwner, asset.getAppraisedValue());
-        //Use a Genson to conver the Asset into string, sort it alphabetically and serialize it into a json string
-        String sortedJson = genson.serialize(newAsset);
-        stub.putStringState(assetID, sortedJson);
-
-        return asset.getOwner();
+        Record record = genson.deserialize(recordJSON, Record.class);
+        return record;
     }
 
-    /**
-     * Retrieves all assets from the ledger.
-     *
-     * @param ctx the transaction context
-     * @return array of assets found on the ledger
-     */
     @Transaction(intent = Transaction.TYPE.EVALUATE)
-    public String GetAllAssets(final Context ctx) {
+    public Record ShowPrivateLog(final Context ctx, final String recordID) {
+        ChaincodeStub stub = ctx.getStub();
+        String recordJSON = stub.getPrivateDataUTF8("_implicit_org_Org1MSP", recordID);
+
+        if (recordJSON == null || recordJSON.isEmpty()) {
+            String errorMessage = String.format("Record %s does not exist", recordID);
+            System.out.println(errorMessage);
+            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_NOT_FOUND.toString());
+        }
+
+        Record record = genson.deserialize(recordJSON, Record.class);
+        return record;
+    }
+
+    @Transaction(intent = Transaction.TYPE.SUBMIT)
+    public Record ChangeLog(final Context ctx, final String recordID, final String recordusername, final int time, final String description) {
         ChaincodeStub stub = ctx.getStub();
 
-        List<Asset> queryResults = new ArrayList<Asset>();
+        if (!RecordExists(ctx, recordID)) {
+            String errorMessage = String.format("Record %s does not exist", recordID);
+            System.out.println(errorMessage);
+            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_NOT_FOUND.toString());
+        }
 
-        // To retrieve all assets from the ledger use getStateByRange with empty startKey & endKey.
-        // Giving empty startKey & endKey is interpreted as all the keys from beginning to end.
-        // As another example, if you use startKey = 'asset0', endKey = 'asset9' ,
-        // then getStateByRange will retrieve asset with keys between asset0 (inclusive) and asset9 (exclusive) in lexical order.
+        Record newRecord = new Record(recordID, recordusername, time, description);
+        String sortedJson = genson.serialize(newRecord);
+        stub.putStringState(recordID, sortedJson);
+        return newRecord;
+    }
+
+    @Transaction(intent = Transaction.TYPE.SUBMIT)
+    public void DeleteLog(final Context ctx, final String recordID) {
+        ChaincodeStub stub = ctx.getStub();
+
+        if (!RecordExists(ctx, recordID)) {
+            String errorMessage = String.format("Record %s does not exist", recordID);
+            System.out.println(errorMessage);
+            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_NOT_FOUND.toString());
+        }
+
+        stub.delState(recordID);
+    }
+
+    @Transaction(intent = Transaction.TYPE.EVALUATE)
+    public boolean RecordExists(final Context ctx, final String recordID) {
+        ChaincodeStub stub = ctx.getStub();
+        String recordJSON = stub.getStringState(recordID);
+
+        return (recordJSON != null && !recordJSON.isEmpty());
+    }
+
+    @Transaction(intent = Transaction.TYPE.EVALUATE)
+    public String ShowAllRecords(final Context ctx, final boolean showprivate) {
+        ChaincodeStub stub = ctx.getStub();
+
+        List<Record> queryResults = new ArrayList<Record>();
+
         QueryResultsIterator<KeyValue> results = stub.getStateByRange("", "");
 
         for (KeyValue result: results) {
-            Asset asset = genson.deserialize(result.getStringValue(), Asset.class);
-            System.out.println(asset);
-            queryResults.add(asset);
+            Record record = genson.deserialize(result.getStringValue(), Record.class);
+            System.out.println(record);
+            queryResults.add(record);
         }
 
         final String response = genson.serialize(queryResults);
