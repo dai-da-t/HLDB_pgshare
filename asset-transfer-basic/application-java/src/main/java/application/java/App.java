@@ -59,7 +59,12 @@ public class App {
 			byte[] result;
 
 			System.out.println("Submit Transaction: InitLedger creates the initial set of assets on the ledger.");
-			// contract.submitTransaction("InitLedger");
+			final String pid = System.getenv("CORE_PEER_LOCALMSPID");
+			try {
+				contract.submitTransaction("InitLedger");
+			} catch (Exception e) {
+				System.out.println("\n");
+			}
 
 			System.out.println("\n");
 			System.out.println("Please enter process");
@@ -79,21 +84,41 @@ public class App {
 					result = contract.evaluateTransaction("ShowLog", words[1]);
 					System.out.println("result: " + new String(result));
 				} else if (Objects.equals(words[0], "ChangeLog")) {
-					contract.submitTransaction("ChangeLog", words[1], words[2], words[3]);
+					contract.submitTransaction("ChangeLog", words[1], words[2], words[3], words[4]);
 					System.out.println("Done!");
 				} else if (Objects.equals(words[0], "DeleteLog")) {
 					contract.submitTransaction("DeleteLog", words[1]);
 					System.out.println("Done!");
 				} else if (Objects.equals(words[0], "AddPrivateLog")) {
-					contract.submitTransaction("AddPrivateLog", words[1], words[2], words[3], words[4]);
+					if (pid.equals("Org1MSP")) {
+						System.out.println("Org1");
+						contract.submitTransaction("AddPrivateLog", words[1], words[2], words[3], words[4]);
+					} else {
+						System.out.println("Org2");
+						contract.submitTransaction("AddPrivateLog2", words[1], words[2], words[3], words[4]);
+					}
 					System.out.println("Done!");
 				} else if (Objects.equals(words[0], "ShowPrivateLog")) {
-					result = contract.evaluateTransaction("ShowPrivateLog", words[1]);
-					System.out.println("result: " + new String(result));
+					try {
+						if (pid.equals("Org1MSP")) {
+							System.out.println("Org1");
+							result = contract.evaluateTransaction("ShowPrivateLog", words[1], pid);
+							System.out.println("result: " + new String(result));
+						} else {
+							System.out.println("Org2");
+							result = contract.evaluateTransaction("ShowPrivateLog2", words[1], pid);
+							System.out.println("result: " + new String(result));
+						}
+					} catch (Exception e) {
+						System.out.println("No data found");
+					}
+
 				}
 
 			}
-		} catch (Exception e) {
+		} catch (
+
+		Exception e) {
 			System.err.println(e);
 		}
 

@@ -94,6 +94,24 @@ public final class AssetTransfer implements ContractInterface {
         return record;
     }
 
+    @Transaction(intent = Transaction.TYPE.SUBMIT)
+    public Record AddPrivateLog2(final Context ctx, final String recordID, final String recordusername, final int time, final String description) {
+        ChaincodeStub stub = ctx.getStub();
+
+        if (RecordExists(ctx, recordID)) {
+            String errorMessage = String.format("Record %s already exists", recordID);
+            System.out.println(errorMessage);
+            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_ALREADY_EXISTS.toString());
+        }
+
+        Record record = new Record(recordID, recordusername, time, description);
+
+        String sortedJson = genson.serialize(record);
+        stub.putPrivateData("_implicit_org_Org2MSP", recordID, sortedJson);
+
+        return record;
+    }
+
     @Transaction(intent = Transaction.TYPE.EVALUATE)
     public Record ShowLog(final Context ctx, final String recordID) {
         ChaincodeStub stub = ctx.getStub();
@@ -113,6 +131,22 @@ public final class AssetTransfer implements ContractInterface {
     public Record ShowPrivateLog(final Context ctx, final String recordID) {
         ChaincodeStub stub = ctx.getStub();
         String recordJSON = stub.getPrivateDataUTF8("_implicit_org_Org1MSP", recordID);
+
+        if (recordJSON == null || recordJSON.isEmpty()) {
+            String errorMessage = String.format("Record %s does not exist", recordID);
+            System.out.println(errorMessage);
+            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_NOT_FOUND.toString());
+        }
+
+        Record record = genson.deserialize(recordJSON, Record.class);
+        return record;
+    }
+
+    @Transaction(intent = Transaction.TYPE.EVALUATE)
+    public Record ShowPrivateLog2(final Context ctx, final String recordID) {
+        ChaincodeStub stub = ctx.getStub();
+
+        String recordJSON = stub.getPrivateDataUTF8("_implicit_org_Org2MSP", recordID);
 
         if (recordJSON == null || recordJSON.isEmpty()) {
             String errorMessage = String.format("Record %s does not exist", recordID);
