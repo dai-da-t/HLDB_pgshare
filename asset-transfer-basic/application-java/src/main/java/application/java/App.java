@@ -87,6 +87,9 @@ public class App {
 				} else if (Objects.equals(words[0], "AddPrivateLog")) {
 					contract.submitTransaction("AddPrivateLog", words[1], words[2], words[3], words[4]);
 					System.out.println("Done!");
+				} else if (Objects.equals(words[0], "ShowPrivateLog")) {
+					result = contract.evaluateTransaction("ShowPrivateLog", words[1]);
+					System.out.println("result: " + new String(result));
 				}
 
 			}

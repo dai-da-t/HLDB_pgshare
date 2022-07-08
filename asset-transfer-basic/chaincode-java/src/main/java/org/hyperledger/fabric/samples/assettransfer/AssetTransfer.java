@@ -162,7 +162,7 @@ public final class AssetTransfer implements ContractInterface {
     }
 
     @Transaction(intent = Transaction.TYPE.EVALUATE)
-    public String ShowAllLog(final Context ctx, final boolean showprivate) {
+    public String ShowAllLog(final Context ctx) {
         ChaincodeStub stub = ctx.getStub();
 
         List<Record> queryResults = new ArrayList<Record>();
